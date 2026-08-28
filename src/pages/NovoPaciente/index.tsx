@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,13 +31,42 @@ export function NovoPaciente() {
     const [profissional, setProfissional] = useState("");
     const [tipoProcedimento, setTipoProcedimento] = useState("");
     const [procedimentoEspecifico, setProcedimentoEspecifico] = useState("");
-    const [prioridade, setPrioridade] = useState<string>("ELETIVO");
-    const [tipoFila, setTipoFila] = useState<string>("PRIMEIRA_CONSULTA");
+    const [prioridade, setPrioridade] = useState<"ELETIVO" | "PRIORITARIO">("ELETIVO");
+    const [tipoFila, setTipoFila] = useState("PRIMEIRA_CONSULTA");
 
     // Controle de UI
     const [pacienteEncontrado, setPacienteEncontrado] = useState(false);
 
-    // 1. Mutação para Buscar CPF
+    // 1. Busca procedimentos ativos no banco de dados
+    const { data: procedimentos = [], isLoading: carregandoProcedimentos } = useQuery({
+        queryKey: ["procedimentos-ativos"],
+        queryFn: async () => {
+            const { data, error } = await api.GET("/procedimentos/", {
+                params: { query: { apenas_ativos: true } },
+            });
+            if (error) return [];
+            return data;
+        },
+    });
+
+    // 2. Busca profissionais ativos no banco de dados
+    const { data: profissionais = [], isLoading: carregandoProfissionais } = useQuery({
+        queryKey: ["profissionais-ativos"],
+        queryFn: async () => {
+            const { data, error } = await api.GET("/profissionais/", {
+                params: { query: { apenas_ativos: true } },
+            });
+            if (error) return [];
+            return data;
+        },
+    });
+
+    // Filtra procedimentos dinamicamente de acordo com o Tipo selecionado
+    const procedimentosFiltrados = tipoProcedimento
+        ? procedimentos.filter((p) => p.tipo === tipoProcedimento)
+        : procedimentos;
+
+    // 3. Mutação para Buscar CPF
     const buscarCpfMutation = useMutation({
         mutationFn: async (cpfBusca: string) => {
             const { data, error, response } = await api.GET("/fila-espera/busca-cpf/{cpf}", {
@@ -45,7 +74,7 @@ export function NovoPaciente() {
             });
 
             if (error) {
-                if (response.status === 404) return null; // Paciente novo
+                if (response.status === 404) return null;
                 throw new Error("Erro ao buscar o CPF");
             }
             return data;
@@ -64,40 +93,56 @@ export function NovoPaciente() {
         onError: (err: Error) => alert(err.message),
     });
 
-    // 2. Mutação para Salvar Paciente
+    // 4. Mutação para Salvar Paciente
     const salvarMutation = useMutation({
         mutationFn: async () => {
-            const payload = {
-                cpf_hash: cpf,
-                nome,
-                nascimento: nascimento || undefined,
-                profissional_solicitante: profissional,
-                tipo_procedimento: tipoProcedimento || undefined,
-                procedimento_especifico: procedimentoEspecifico || undefined,
-                prioridade: prioridade as any,
-                tipo_fila: tipoFila,
-            };
-
             const { error } = await api.POST("/fila-espera/", {
-                body: payload,
+                body: {
+                    cpf_hash: cpf,
+                    nome,
+                    nascimento: nascimento || undefined,
+                    profissional_solicitante: profissional,
+                    tipo_procedimento: tipoProcedimento || undefined,
+                    procedimento_especifico: procedimentoEspecifico || undefined,
+                    prioridade,
+                    tipo_fila: tipoFila,
+                    status: "AGUARDANDO",
+                },
             });
 
-            if (error) throw new Error((error as any).detail || "Erro ao inserir paciente na fila.");
+            if (error) {
+                let errorDetail = "Erro ao inserir paciente na fila.";
+                if (typeof error === "object" && error !== null && "detail" in error) {
+                    const detail = (error as { detail?: unknown }).detail;
+                    if (typeof detail === "string") {
+                        errorDetail = detail;
+                    } else if (Array.isArray(detail)) {
+                        errorDetail = detail
+                            .map((item: { msg?: string }) => item.msg ?? "Erro de validação")
+                            .join("; ");
+                    }
+                }
+                throw new Error(errorDetail);
+            }
         },
         onSuccess: () => {
             alert("Paciente adicionado à fila com sucesso!");
-            navigate("/dashboard"); // Volta para o painel
+            navigate("/dashboard");
         },
         onError: (err: Error) => alert(err.message),
     });
 
     function handleBuscarCpf() {
-        if (cpf.length < 11) return alert("Digite o CPF completo");
+        if (cpf.length < 11) return alert("Digite o CPF completo (11 dígitos)");
         buscarCpfMutation.mutate(cpf);
     }
 
     function handleSalvar(e: React.FormEvent) {
         e.preventDefault();
+        if (!cpf || !nome || !profissional || !procedimentoEspecifico) {
+            alert("Preencha todos os campos obrigatórios marcados com *");
+            return;
+        }
         salvarMutation.mutate();
     }
 
@@ -105,7 +150,7 @@ export function NovoPaciente() {
         <div className="min-h-screen bg-slate-50 p-6 flex justify-center items-start">
             <div className="w-full max-w-3xl space-y-6">
 
-                {/* Cabeçalho de Navegação */}
+                {/* Cabeçalho */}
                 <div className="flex items-center gap-4">
                     <Button variant="outline" size="icon" onClick={() => navigate("/dashboard")}>
                         <ArrowLeft className="h-4 w-4" />
@@ -137,6 +182,12 @@ export function NovoPaciente() {
                                         maxLength={11}
                                         value={cpf}
                                         onChange={(e) => setCpf(e.target.value.replace(/\D/g, ''))}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleBuscarCpf();
+                                            }
+                                        }}
                                         disabled={salvarMutation.isPending}
                                     />
                                 </div>
@@ -185,14 +236,38 @@ export function NovoPaciente() {
 
                             {/* Dados Clínicos */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                {/* Dropdown: Profissional Solicitante */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Profissional Solicitante *</label>
-                                    <Input
-                                        required
-                                        placeholder="Ex: Dr. Carlos / Enf. Maria"
+                                    <Select
                                         value={profissional}
-                                        onChange={(e) => setProfissional(e.target.value)}
-                                    />
+                                        onValueChange={setProfissional}
+                                        disabled={carregandoProfissionais}
+                                    >
+                                        <SelectTrigger className="bg-white">
+                                            <SelectValue
+                                                placeholder={
+                                                    carregandoProfissionais
+                                                        ? "Carregando..."
+                                                        : "Selecione o profissional..."
+                                                }
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white max-h-60 overflow-y-auto">
+                                            {profissionais.length === 0 ? (
+                                                <div className="p-2 text-xs text-slate-500 text-center">
+                                                    Nenhum profissional cadastrado
+                                                </div>
+                                            ) : (
+                                                profissionais.map((prof) => (
+                                                    <SelectItem key={prof.id} value={prof.nome}>
+                                                        {prof.nome} {prof.conselho_registro ? `(${prof.conselho_registro})` : ""}
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="space-y-2">
@@ -208,28 +283,71 @@ export function NovoPaciente() {
                                     </Select>
                                 </div>
 
+                                {/* Dropdown: Tipo de Procedimento */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Tipo de Procedimento</label>
-                                    <Input
-                                        placeholder="Ex: CONSULTA, EXAME, CIRURGIA"
+                                    <Select
                                         value={tipoProcedimento}
-                                        onChange={(e) => setTipoProcedimento(e.target.value)}
-                                    />
+                                        onValueChange={(val) => {
+                                            setTipoProcedimento(val);
+                                            setProcedimentoEspecifico(""); // Reseta a especialidade selecionada ao trocar de tipo
+                                        }}
+                                    >
+                                        <SelectTrigger className="bg-white">
+                                            <SelectValue placeholder="Selecione o tipo..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white">
+                                            <SelectItem value="CONSULTA">CONSULTA</SelectItem>
+                                            <SelectItem value="EXAME">EXAME</SelectItem>
+                                            <SelectItem value="CIRURGIA">CIRURGIA</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
+                                {/* Dropdown: Procedimento / Especialidade */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Procedimento / Especialidade *</label>
-                                    <Input
-                                        required
-                                        placeholder="Ex: CARDIOLOGIA, RAIO-X"
+                                    <Select
                                         value={procedimentoEspecifico}
-                                        onChange={(e) => setProcedimentoEspecifico(e.target.value)}
-                                    />
+                                        onValueChange={(val) => {
+                                            setProcedimentoEspecifico(val);
+                                            // Preenche o tipo automaticamente se ainda estiver vazio
+                                            const proc = procedimentos.find((p) => p.nome === val);
+                                            if (proc && !tipoProcedimento) {
+                                                setTipoProcedimento(proc.tipo);
+                                            }
+                                        }}
+                                        disabled={carregandoProcedimentos}
+                                    >
+                                        <SelectTrigger className="bg-white">
+                                            <SelectValue
+                                                placeholder={
+                                                    carregandoProcedimentos ? "Carregando..." : "Selecione a especialidade..."
+                                                }
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white max-h-60 overflow-y-auto">
+                                            {procedimentosFiltrados.length === 0 ? (
+                                                <div className="p-2 text-xs text-slate-500 text-center">
+                                                    Nenhum procedimento cadastrado
+                                                </div>
+                                            ) : (
+                                                procedimentosFiltrados.map((proc) => (
+                                                    <SelectItem key={proc.id} value={proc.nome}>
+                                                        {proc.nome}
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="space-y-2 md:col-span-2">
                                     <label className="text-sm font-medium">Prioridade Clínica *</label>
-                                    <Select value={prioridade} onValueChange={setPrioridade}>
+                                    <Select
+                                        value={prioridade}
+                                        onValueChange={(val) => setPrioridade(val as "ELETIVO" | "PRIORITARIO")}
+                                    >
                                         <SelectTrigger className="bg-white">
                                             <SelectValue placeholder="Selecione" />
                                         </SelectTrigger>
@@ -242,6 +360,7 @@ export function NovoPaciente() {
                             </div>
 
                         </CardContent>
+
                         <CardFooter className="bg-slate-50 border-t px-6 py-4 flex justify-end gap-3">
                             <Button type="button" variant="outline" onClick={() => navigate("/dashboard")}>
                                 Cancelar
