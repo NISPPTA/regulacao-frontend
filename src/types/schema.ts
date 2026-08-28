@@ -272,6 +272,58 @@ export interface paths {
         patch: operations["atualizar_unidade_unidades__unidade_id__patch"];
         trace?: never;
     };
+    "/profissionais/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar Profissionais
+         * @description Lista todos os profissionais solicitantes (Acessível a qualquer usuário autenticado).
+         */
+        get: operations["listar_profissionais_profissionais__get"];
+        put?: never;
+        /**
+         * Criar Profissional
+         * @description Cadastra um novo profissional solicitante (Apenas ADMIN).
+         */
+        post: operations["criar_profissional_profissionais__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profissionais/{profissional_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obter Profissional
+         * @description Busca detalhes de um profissional específico por ID.
+         */
+        get: operations["obter_profissional_profissionais__profissional_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Desabilitar Profissional
+         * @description Realiza Soft Delete do profissional solicitante, definindo ativo=False (Apenas ADMIN).
+         */
+        delete: operations["desabilitar_profissional_profissionais__profissional_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Atualizar Profissional
+         * @description Atualiza dados do profissional solicitante (Apenas ADMIN).
+         */
+        patch: operations["atualizar_profissional_profissionais__profissional_id__patch"];
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -717,6 +769,94 @@ export interface components {
             /** Codigo Sigtap */
             codigo_sigtap?: string | null;
             /** Ativo */
+            ativo?: boolean | null;
+        };
+        /** ProfissionalCreate */
+        ProfissionalCreate: {
+            /**
+             * Nome
+             * @description Nome completo do profissional
+             * @example Dr. Carlos Silva
+             */
+            nome: string;
+            /**
+             * Conselho Registro
+             * @description Registro no conselho profissional
+             * @example CRM/SP 123456
+             */
+            conselho_registro?: string | null;
+            /**
+             * Categoria
+             * @description Categoria (ex: MEDICO, ENFERMEIRO)
+             * @example MEDICO
+             */
+            categoria?: string | null;
+            /**
+             * Ativo
+             * @description Status de ativacao do profissional
+             * @default true
+             */
+            ativo: boolean;
+        };
+        /** ProfissionalResponse */
+        ProfissionalResponse: {
+            /**
+             * Nome
+             * @description Nome completo do profissional
+             * @example Dr. Carlos Silva
+             */
+            nome: string;
+            /**
+             * Conselho Registro
+             * @description Registro no conselho profissional
+             * @example CRM/SP 123456
+             */
+            conselho_registro?: string | null;
+            /**
+             * Categoria
+             * @description Categoria (ex: MEDICO, ENFERMEIRO)
+             * @example MEDICO
+             */
+            categoria?: string | null;
+            /**
+             * Ativo
+             * @description Status de ativacao do profissional
+             * @default true
+             */
+            ativo: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description ID unico do profissional
+             */
+            id: string;
+            /**
+             * Created At
+             * @description Data de cadastro
+             */
+            created_at?: string | null;
+        };
+        /** ProfissionalUpdate */
+        ProfissionalUpdate: {
+            /**
+             * Nome
+             * @description Novo nome do profissional
+             */
+            nome?: string | null;
+            /**
+             * Conselho Registro
+             * @description Novo registro profissional
+             */
+            conselho_registro?: string | null;
+            /**
+             * Categoria
+             * @description Nova categoria profissional
+             */
+            categoria?: string | null;
+            /**
+             * Ativo
+             * @description Status de ativação
+             */
             ativo?: boolean | null;
         };
         /** ResumoEstatisticas */
@@ -1476,6 +1616,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnidadeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_profissionais_profissionais__get: {
+        parameters: {
+            query?: {
+                /** @description Filtrar apenas profissionais ativos */
+                apenas_ativos?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfissionalResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    criar_profissional_profissionais__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfissionalCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfissionalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    obter_profissional_profissionais__profissional_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profissional_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfissionalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    desabilitar_profissional_profissionais__profissional_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profissional_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_profissional_profissionais__profissional_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profissional_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfissionalUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfissionalResponse"];
                 };
             };
             /** @description Validation Error */
