@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/api/client";
+import { useNavigate } from "react-router-dom";
+import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -39,10 +41,12 @@ import { LogOut, ChevronLeft, ChevronRight, UserCheck, Search, FilterX, Stethosc
 
 const PAGE_SIZE = 10;
 
+
 export function Dashboard() {
     const { logout } = useAuth();
     const queryClient = useQueryClient();
     const [page, setPage] = useState(0);
+    const navigate = useNavigate();
 
     // Estados dos Filtros
     const [busca, setBusca] = useState("");
@@ -181,6 +185,13 @@ export function Dashboard() {
                         <p className="text-sm text-slate-500">Gestão municipal da fila de espera</p>
                     </div>
                 </div>
+                <Button
+                    onClick={() => navigate("/novo-paciente")}
+                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                    <UserPlus className="h-4 w-4" />
+                    Nova Solicitação
+                </Button>
                 <Button variant="destructive" onClick={logout} className="gap-2">
                     <LogOut className="h-4 w-4" /> Sair
                 </Button>
