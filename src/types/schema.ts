@@ -400,42 +400,30 @@ export interface components {
              */
             profissional_solicitante: string;
             /**
-             * Procedimento Id
-             * @description ID do procedimento padronizado (Nova Estrutura)
-             */
-            procedimento_id?: string | null;
-            /**
-             * Unidade Origem Id
-             * @description ID da unidade de saúde solicitante
-             */
-            unidade_origem_id?: string | null;
-            /**
              * Tipo Procedimento
-             * @description [LEGADO] Categoria do procedimento
-             * @example CONSULTA
-             * @example EXAME
+             * @description Categoria do procedimento (Ex: CONSULTA, EXAME)
              */
             tipo_procedimento?: string | null;
             /**
              * Procedimento Especifico
-             * @description [LEGADO] Especialidade ou exame exato
-             * @example CARDIOLOGIA
+             * @description Nome exato do procedimento ou especialidade
              */
             procedimento_especifico?: string | null;
-            /** @description Classificação de prioridade do paciente */
+            /** @description Classificação de risco (ELETIVO ou PRIORITARIO) */
             prioridade: components["schemas"]["PrioridadeFila"];
             /**
              * Tipo Fila
-             * @description Natureza do procedimento (ex: PRIMEIRA_CONSULTA, RETORNO)
-             * @default PRIMEIRA_CONSULTA
-             * @example PRIMEIRA_CONSULTA
-             * @example RETORNO
+             * @description Natureza do atendimento (PRIMEIRA_CONSULTA ou RETORNO)
              */
             tipo_fila: string;
             /**
+             * @description Status inicial na fila
+             * @default AGUARDANDO
+             */
+            status: components["schemas"]["StatusFila"];
+            /**
              * Data Solicitacao
-             * @description Data real em que o pedido foi feito na UBS. Se omitido, assume o dia de hoje.
-             * @example 2026-08-19
+             * @description Data da inserção no sistema
              */
             data_solicitacao?: string | null;
         };
@@ -476,6 +464,16 @@ export interface components {
              * @example Paciente apresenta piora do quadro, prioridade elevada para PRIORITARIO.
              */
             justificativa_regulacao?: string | null;
+            /**
+             * Justificativa Cancelamento
+             * @description Motivo do cancelamento (obrigatório se CANCELADO)
+             */
+            justificativa_cancelamento?: string | null;
+            /**
+             * Data Cancelamento
+             * @description Data e hora em que ocorreu o cancelamento
+             */
+            data_cancelamento?: string | null;
         };
         /** FilaEsperaResponse */
         FilaEsperaResponse: {
@@ -511,38 +509,24 @@ export interface components {
              */
             profissional_solicitante: string;
             /**
-             * Procedimento Id
-             * @description ID do procedimento padronizado (Nova Estrutura)
-             */
-            procedimento_id?: string | null;
-            /**
-             * Unidade Origem Id
-             * @description ID da unidade de saúde solicitante
-             */
-            unidade_origem_id?: string | null;
-            /**
              * Tipo Procedimento
-             * @description [LEGADO] Categoria do procedimento
-             * @example CONSULTA
-             * @example EXAME
+             * @description Categoria do procedimento (Ex: CONSULTA, EXAME)
              */
             tipo_procedimento?: string | null;
             /**
              * Procedimento Especifico
-             * @description [LEGADO] Especialidade ou exame exato
-             * @example CARDIOLOGIA
+             * @description Nome exato do procedimento ou especialidade
              */
             procedimento_especifico?: string | null;
-            /** @description Classificação de prioridade do paciente */
+            /** @description Classificação de risco (ELETIVO ou PRIORITARIO) */
             prioridade: components["schemas"]["PrioridadeFila"];
             /**
              * Tipo Fila
-             * @description Natureza do procedimento (ex: PRIMEIRA_CONSULTA, RETORNO)
-             * @default PRIMEIRA_CONSULTA
-             * @example PRIMEIRA_CONSULTA
-             * @example RETORNO
+             * @description Natureza do atendimento (PRIMEIRA_CONSULTA ou RETORNO)
              */
             tipo_fila: string;
+            /** @description Status atual do paciente na fila */
+            status: components["schemas"]["StatusFila"];
             /**
              * Data Solicitacao
              * Format: date
@@ -555,8 +539,6 @@ export interface components {
              * @description ID único do registro
              */
             id: string;
-            /** @description Status atual do paciente na fila */
-            status: components["schemas"]["StatusFila"];
             /**
              * Data Agendamento
              * @description Data marcada (presente se status for AGENDADO)
@@ -567,6 +549,41 @@ export interface components {
              * @description Local ou prestador onde o procedimento ocorrerá
              */
             descricao_agendamento?: string | null;
+            /**
+             * Justificativa Cancelamento
+             * @description Motivo do cancelamento
+             */
+            justificativa_cancelamento?: string | null;
+            /**
+             * Data Cancelamento
+             * @description Data e hora do cancelamento
+             */
+            data_cancelamento?: string | null;
+            /**
+             * Justificativa Regulacao
+             * @description Parecer médico do regulador
+             */
+            justificativa_regulacao?: string | null;
+            /**
+             * Ordem Manual
+             * @description Ordenação manual forçada
+             */
+            ordem_manual?: number | null;
+            /**
+             * Unidade Origem Id
+             * @description ID da Unidade de Saúde de origem
+             */
+            unidade_origem_id?: string | null;
+            /**
+             * Updated At
+             * @description Data e hora da última alteração
+             */
+            updated_at?: string | null;
+            /**
+             * Atualizado Por
+             * @description ID do usuário que atualizou por último
+             */
+            atualizado_por?: string | null;
             /**
              * Created At
              * @description Data e hora do cadastro
